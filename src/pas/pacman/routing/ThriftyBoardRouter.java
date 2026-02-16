@@ -3,6 +3,7 @@ package src.pas.pacman.routing;
 
 // SYSTEM IMPORTS
 import java.util.Collection;
+import java.util.ArrayList;
 
 
 // JAVA PROJECT IMPORTS
@@ -50,6 +51,14 @@ public class ThriftyBoardRouter
                                                        final ExtraParams params)
     {
         // TODO: implement me!
+        Collection<Coordinate> neighbors = new ArrayList<Coordinate>();
+
+        for (Action action : Action.values()) {
+            Coordinate neighbor = src.getNeighbor(action);
+            if ((game.isInBounds(src)) && (game.getTile(src).getState() != Tile.State.WALL)) {
+                neighbors.add(neighbor);
+            }
+        }
         return null;
     }
 
