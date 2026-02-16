@@ -4,6 +4,10 @@ package src.pas.pacman.routing;
 // SYSTEM IMPORTS
 import java.util.Collection;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.PriorityQueue;
 
 
 // JAVA PROJECT IMPORTS
@@ -67,7 +71,40 @@ public class ThriftyBoardRouter
                                         final Coordinate tgt,
                                         final GameView game)
     {
-        // TODO: implement me!
+        PriorityQueue<Path<Coordinate>> open = new PriorityQueue<>(Comparator.comparingDouble(p -> p.trueCost() + p.heuristicCost()));
+
+        Map<Coordinate, Double> bestCost = new HashMap<>();
+        bestCost.put(src, 0.0);
+
+        Path<Coordinate> start = new Path<>(src, null, 0.0, manhattan(src, target));
+        open.add(start);
+
+        while (!open.isEmpty()) {
+            Path<Coordinate> currentPath = open.poll();
+            Coordinate current = currentPath.current();
+            double currentCost = currentPath.trueCost();
+
+            double bestKnown = bestCost.getOrDefault(current, Double.POSITIVE_INFINITY);
+            if (currentCost > bestKnown) {
+                continue;
+            }
+            if (current.equals(tgt)) {
+                return currentPath;
+            }
+            for (Coordinate nxt : getOutgoingNeighbors(current, game, null) {
+                double stepCost = 1.0;
+                double tempCost = currentCost + stepCost;
+                
+                double prevBest = bestCost.getOrDefault(nxt, Double.POSITIVE_INFINITY);
+                if (tempCost < prevBest) {
+                    bestCost.put(nxt, tempCost);
+
+                    Path<Coordinate> nxtPath = new Path<>(nxt, currentPath, tempCost, manhattan(nxt, tgt));
+                    open.add(nxtPath);
+                }
+            }
+        }
+
         return null;
     }
 
