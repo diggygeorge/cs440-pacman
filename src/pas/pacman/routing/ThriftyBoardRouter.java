@@ -20,6 +20,7 @@ import edu.bu.pas.pacman.routing.BoardRouter;
 import edu.bu.pas.pacman.routing.BoardRouter.ExtraParams;
 import edu.bu.pas.pacman.utils.Coordinate;
 import edu.bu.pas.pacman.utils.Pair;
+import edu.bu.pas.pacman.utils.DistanceMetric;
 
 
 // This class is responsible for calculating routes between two Coordinates on the Map.
@@ -59,11 +60,11 @@ public class ThriftyBoardRouter
 
         for (Action action : Action.values()) {
             Coordinate neighbor = src.getNeighbor(action);
-            if ((game.isInBounds(src)) && (game.getTile(src).getState() != Tile.State.WALL)) {
+            if ((game.isInBounds(neighbor)) && (game.getTile(neighbor).getState() != Tile.State.WALL)) {
                 neighbors.add(neighbor);
             }
         }
-        return null;
+        return neighbors;
     }
 
     @Override
@@ -71,18 +72,18 @@ public class ThriftyBoardRouter
                                         final Coordinate tgt,
                                         final GameView game)
     {
-        PriorityQueue<Path<Coordinate>> open = new PriorityQueue<>(Comparator.comparingDouble(p -> p.trueCost() + p.heuristicCost()));
+        PriorityQueue<Path<Coordinate>> open = new PriorityQueue<>(Comparator.comparingDouble(p -> p.getTrueCost() + p.getEstimatedPathCostToGoal()));
 
         Map<Coordinate, Double> bestCost = new HashMap<>();
         bestCost.put(src, 0.0);
 
-        Path<Coordinate> start = new Path<>(src, null, 0.0, manhattan(src, target));
+        Path<Coordinate> start = new Path<Coordinate>(src, (float)1.0, DistanceMetric.manhattanDistance(src, tgt), null);
         open.add(start);
 
         while (!open.isEmpty()) {
             Path<Coordinate> currentPath = open.poll();
-            Coordinate current = currentPath.current();
-            double currentCost = currentPath.trueCost();
+            Coordinate current = currentPath.getDestination();
+            double currentCost = currentPath.getTrueCost();
 
             double bestKnown = bestCost.getOrDefault(current, Double.POSITIVE_INFINITY);
             if (currentCost > bestKnown) {
@@ -91,7 +92,7 @@ public class ThriftyBoardRouter
             if (current.equals(tgt)) {
                 return currentPath;
             }
-            for (Coordinate nxt : getOutgoingNeighbors(current, game, null) {
+            for (Coordinate nxt : getOutgoingNeighbors(current, game, null)) {
                 double stepCost = 1.0;
                 double tempCost = currentCost + stepCost;
                 
@@ -99,7 +100,7 @@ public class ThriftyBoardRouter
                 if (tempCost < prevBest) {
                     bestCost.put(nxt, tempCost);
 
-                    Path<Coordinate> nxtPath = new Path<>(nxt, currentPath, tempCost, manhattan(nxt, tgt));
+                    Path<Coordinate> nxtPath = new Path<Coordinate>(nxt, (float)tempCost, DistanceMetric.manhattanDistance(nxt, tgt), currentPath);
                     open.add(nxtPath);
                 }
             }
