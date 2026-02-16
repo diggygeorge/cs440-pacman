@@ -55,11 +55,13 @@ public class ThriftyBoardRouter
                                                        final GameView game,
                                                        final ExtraParams params)
     {
-        // TODO: implement me!
         Collection<Coordinate> neighbors = new ArrayList<Coordinate>();
 
         for (Action action : Action.values()) {
             Coordinate neighbor = src.getNeighbor(action);
+            if (neighbor.equals(src)) {
+                continue;
+            }
             if ((game.isInBounds(neighbor)) && (game.getTile(neighbor).getState() != Tile.State.WALL)) {
                 neighbors.add(neighbor);
             }
@@ -77,7 +79,7 @@ public class ThriftyBoardRouter
         Map<Coordinate, Double> bestCost = new HashMap<>();
         bestCost.put(src, 0.0);
 
-        Path<Coordinate> start = new Path<Coordinate>(src, (float)1.0, DistanceMetric.manhattanDistance(src, tgt), null);
+        Path<Coordinate> start = new Path<Coordinate>(src, 0.0f, DistanceMetric.manhattanDistance(src, tgt), null);
         open.add(start);
 
         while (!open.isEmpty()) {
