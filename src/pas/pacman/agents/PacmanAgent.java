@@ -3,6 +3,7 @@ package src.pas.pacman.agents;
 
 // SYSTEM IMPORTS
 import edu.bu.pas.pacman.agents.Agent;
+import edu.bu.pas.pacman.game.entity.Entity;
 import edu.bu.pas.pacman.agents.SearchAgent;
 import edu.bu.pas.pacman.game.Action;
 import edu.bu.pas.pacman.game.Game.GameView;
@@ -15,6 +16,7 @@ import edu.bu.pas.pacman.utils.Pair;
 
 import java.util.Random;
 import java.util.Set;
+import java.util.Stack;
 
 
 // JAVA PROJECT IMPORTS
@@ -54,14 +56,49 @@ public class PacmanAgent
         // this.getBoardRouter().graphSearch(...) to get a path and convert it into
         // a Stack of Coordinates (see the documentation for SearchAgent)
         // which your makeMove can do something with!
+
+        //System.out.println("Pacman ID: " + game.getEntity(getPacmanId()));
+
+        PelletVertex vertex = new PelletVertex(game);
+        Coordinate start = vertex.getPacmanCoordinate();
+        Stack<Coordinate> plan = new Stack<Coordinate>();
+
+        Path<Coordinate> path = this.getBoardRouter().graphSearch(start, start, game);
+        while (path != null) {
+            Coordinate c = path.getDestination();
+            plan.push(c);
+            path = path.getParentPath();
+        }
+        plan.pop();
+        System.out.println("Plan: " + plan);
+        
+        setPlanToGetToTarget(plan);
+
     }
 
     @Override
     public Action makeMove(final GameView game)
     {
-        // This is currently configured to choose a random action
         // TODO: change me!
-        return Action.values()[this.getRandom().nextInt(Action.values().length)];
+        makePlan(game);
+        PelletVertex vertex = new PelletVertex(game);
+        Coordinate pacman = vertex.getPacmanCoordinate();
+        if (this.getPlanToGetToTarget().isEmpty() == false) {
+            Coordinate nextMove = this.getPlanToGetToTarget().pop();
+            System.out.println("Next Move: " + nextMove);
+            for (Action action : Action.values()) {
+                System.out.println("Pacman: " + pacman);
+                System.out.println(pacman.getNeighbor(action) + " " + nextMove);
+                if (pacman.getNeighbor(action).equals(nextMove)) {
+                    System.out.println("Action: " + action);
+                    return action;
+                }
+            }
+        } else {
+            System.out.println("No plan detected");
+            return Action.values()[this.getRandom().nextInt(Action.values().length)];
+        }
+        return null;
     }
 
     @Override

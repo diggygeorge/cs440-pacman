@@ -8,6 +8,9 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.PriorityQueue;
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.Set;
 
 
 // JAVA PROJECT IMPORTS
@@ -16,6 +19,7 @@ import edu.bu.pas.pacman.game.Action;
 import edu.bu.pas.pacman.game.Game.GameView;
 import edu.bu.pas.pacman.game.Tile;
 import edu.bu.pas.pacman.graph.Path;
+import edu.bu.pas.pacman.graph.PelletGraph.PelletVertex;
 import edu.bu.pas.pacman.routing.BoardRouter;
 import edu.bu.pas.pacman.routing.BoardRouter.ExtraParams;
 import edu.bu.pas.pacman.utils.Coordinate;
@@ -35,7 +39,7 @@ public class ThriftyBoardRouter
     public static class BoardExtraParams
         extends ExtraParams
     {
-
+        
     }
 
     // feel free to add other fields here!
@@ -72,41 +76,27 @@ public class ThriftyBoardRouter
                                         final Coordinate tgt,
                                         final GameView game)
     {
-        PriorityQueue<Path<Coordinate>> open = new PriorityQueue<>(Comparator.comparingDouble(p -> p.getTrueCost() + p.getEstimatedPathCostToGoal()));
+        PelletVertex vertex = new PelletVertex(game);
+        Set<Coordinate> pellets = vertex.getRemainingPelletCoordinates();
+        System.out.println("Pellets Remaining: " + pellets.size());
+        Queue<Path<Coordinate>> queue = new LinkedList<Path<Coordinate>>();
+        Path<Coordinate> srcPath = new Path<Coordinate>(src);
+        queue.add(srcPath);
 
-        Map<Coordinate, Double> bestCost = new HashMap<>();
-        bestCost.put(src, 0.0);
-
-        Path<Coordinate> start = new Path<Coordinate>(src, (float)1.0, DistanceMetric.manhattanDistance(src, tgt), null);
-        open.add(start);
-
-        while (!open.isEmpty()) {
-            Path<Coordinate> currentPath = open.poll();
-            Coordinate current = currentPath.getDestination();
-            double currentCost = currentPath.getTrueCost();
-
-            double bestKnown = bestCost.getOrDefault(current, Double.POSITIVE_INFINITY);
-            if (currentCost > bestKnown) {
-                continue;
+        while (!queue.isEmpty()) {
+            Path<Coordinate> p = queue.poll();
+            Coordinate current = p.getDestination();
+            if (pellets.contains(current)) {
+                return p;
             }
-            if (current.equals(tgt)) {
-                return currentPath;
-            }
-            for (Coordinate nxt : getOutgoingNeighbors(current, game, null)) {
-                double stepCost = 1.0;
-                double tempCost = currentCost + stepCost;
-                
-                double prevBest = bestCost.getOrDefault(nxt, Double.POSITIVE_INFINITY);
-                if (tempCost < prevBest) {
-                    bestCost.put(nxt, tempCost);
 
-                    Path<Coordinate> nxtPath = new Path<Coordinate>(nxt, (float)tempCost, DistanceMetric.manhattanDistance(nxt, tgt), currentPath);
-                    open.add(nxtPath);
-                }
+            for (Coordinate c : getOutgoingNeighbors(current, game, null)) {
+                Path<Coordinate> newPath = new Path<Coordinate>(c, (float)1.0, p);
+                queue.add(newPath);
             }
         }
-
         return null;
+
     }
 
 }
