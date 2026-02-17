@@ -88,7 +88,7 @@ public class PacmanAgent
             System.out.println("Next Move: " + nextMove);
             for (Action action : Action.values()) {
                 System.out.println("Pacman: " + pacman);
-                System.out.println(pacman.getNeighbor(action) + " " + nextMove);
+                System.out.println("Neighbor: " + pacman.getNeighbor(action) + " Next Move: " + nextMove);
                 if (pacman.getNeighbor(action).equals(nextMove)) {
                     System.out.println("Action: " + action);
                     return action;

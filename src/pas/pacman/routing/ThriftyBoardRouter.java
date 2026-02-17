@@ -66,7 +66,7 @@ public class ThriftyBoardRouter
             if (neighbor.equals(src)) {
                 continue;
             }
-            if ((game.isInBounds(neighbor)) && (game.getTile(neighbor).getState() != Tile.State.WALL)) {
+            if ((game.isInBounds(neighbor)) && (game.getTile(neighbor).getState() != Tile.State.WALL) && (game.getTile(neighbor).getState() != Tile.State.GHOST_PEN)) {
                 neighbors.add(neighbor);
             }
         }
