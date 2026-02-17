@@ -59,11 +59,13 @@ public class ThriftyBoardRouter
                                                        final GameView game,
                                                        final ExtraParams params)
     {
-        // TODO: implement me!
         Collection<Coordinate> neighbors = new ArrayList<Coordinate>();
 
         for (Action action : Action.values()) {
             Coordinate neighbor = src.getNeighbor(action);
+            if (neighbor.equals(src)) {
+                continue;
+            }
             if ((game.isInBounds(neighbor)) && (game.getTile(neighbor).getState() != Tile.State.WALL)) {
                 neighbors.add(neighbor);
             }
