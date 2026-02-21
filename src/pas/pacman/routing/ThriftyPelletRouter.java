@@ -3,6 +3,7 @@ package src.pas.pacman.routing;
 
 // SYSTEM IMPORTS
 import java.util.Collection;
+import java.util.ArrayList;
 
 
 // JAVA PROJECT IMPORTS
@@ -46,7 +47,15 @@ public class ThriftyPelletRouter
                                                          final ExtraParams params)
     {
         // TODO: implement me!
-        return null;
+        Coordinate current = src.getPacmanCoordinate();
+        Collection<PelletVertex> collection = new ArrayList<PelletVertex>();
+
+        for (Action action : Action.values()) {
+            Coordinate neighbor = current.getNeighbor(action);
+            collection.add(src.removePellet(neighbor));
+        }
+
+        return collection;
     }
 
     @Override
@@ -55,7 +64,14 @@ public class ThriftyPelletRouter
                                final ExtraParams params)
     {
         // TODO: implement me!
-        return 1f;
+        Coordinate c1 = src.getPacmanCoordinate();
+        Coordinate c2 = dst.getPacmanCoordinate();
+
+        Pair<Float, Float> p1 = new Pair<Float, Float>((float)c1.x(), (float)c1.y());
+        Pair<Float, Float> p2 = new Pair<Float, Float>((float)c2.x(), (float)c2.y());
+
+        return (float)(Math.pow((double)(p2.getFirst() - p1.getFirst()), 2.0) + Math.pow((double)(p2.getSecond() - p1.getSecond()), 2.0));
+
     }
 
     @Override
