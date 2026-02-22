@@ -3,11 +3,15 @@ package src.pas.pacman.routing;
 
 // SYSTEM IMPORTS
 import java.util.Collection;
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.Set;
 import java.util.ArrayList;
 
 
 // JAVA PROJECT IMPORTS
 import edu.bu.pas.pacman.game.Action;
+import edu.bu.pas.pacman.game.Tile;
 import edu.bu.pas.pacman.game.Game.GameView;
 import edu.bu.pas.pacman.graph.Path;
 import edu.bu.pas.pacman.graph.PelletGraph.PelletVertex;
@@ -50,12 +54,26 @@ public class ThriftyPelletRouter
         Coordinate current = src.getPacmanCoordinate();
         Collection<PelletVertex> collection = new ArrayList<PelletVertex>();
 
-        for (Action action : Action.values()) {
-            Coordinate neighbor = current.getNeighbor(action);
-            collection.add(src.removePellet(neighbor));
-        }
+        dfs(collection, src, current, game, params);
 
         return collection;
+    }
+
+    private void dfs(final Collection<PelletVertex> collection,
+                                         final PelletVertex src,
+                                         final Coordinate current, 
+                                         final GameView game, 
+                                         final ExtraParams params) {
+
+        if (game.getTile(current).getState() == Tile.State.PELLET) {
+            collection.add(src.removePellet(current));
+            return;
+        }
+
+        for (Action action : Action.values()) {
+            Coordinate neighbor = current.getNeighbor(action);
+            dfs(collection, src, neighbor, game, params);
+        }
     }
 
     @Override
