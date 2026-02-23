@@ -18,6 +18,7 @@ import edu.bu.pas.pacman.graph.PelletGraph.PelletVertex;
 import edu.bu.pas.pacman.routing.PelletRouter;
 import edu.bu.pas.pacman.routing.PelletRouter.ExtraParams;
 import edu.bu.pas.pacman.utils.Coordinate;
+import edu.bu.pas.pacman.utils.DistanceMetric;
 import edu.bu.pas.pacman.utils.Pair;
 
 
@@ -51,29 +52,13 @@ public class ThriftyPelletRouter
                                                          final ExtraParams params)
     {
         // TODO: implement me!
-        Coordinate current = src.getPacmanCoordinate();
         Collection<PelletVertex> collection = new ArrayList<PelletVertex>();
 
-        dfs(collection, src, current, game, params);
+        for (Coordinate c : src.getRemainingPelletCoordinates()) {
+            collection.add(src.removePellet(c));
+        }
 
         return collection;
-    }
-
-    private void dfs(final Collection<PelletVertex> collection,
-                                         final PelletVertex src,
-                                         final Coordinate current, 
-                                         final GameView game, 
-                                         final ExtraParams params) {
-
-        if (game.getTile(current).getState() == Tile.State.PELLET) {
-            collection.add(src.removePellet(current));
-            return;
-        }
-
-        for (Action action : Action.values()) {
-            Coordinate neighbor = current.getNeighbor(action);
-            dfs(collection, src, neighbor, game, params);
-        }
     }
 
     @Override
@@ -85,10 +70,7 @@ public class ThriftyPelletRouter
         Coordinate c1 = src.getPacmanCoordinate();
         Coordinate c2 = dst.getPacmanCoordinate();
 
-        Pair<Float, Float> p1 = new Pair<Float, Float>((float)c1.x(), (float)c1.y());
-        Pair<Float, Float> p2 = new Pair<Float, Float>((float)c2.x(), (float)c2.y());
-
-        return (float)(Math.pow((double)(p2.getFirst() - p1.getFirst()), 2.0) + Math.pow((double)(p2.getSecond() - p1.getSecond()), 2.0));
+        return DistanceMetric.manhattanDistance(c1, c2);
 
     }
 
@@ -98,7 +80,22 @@ public class ThriftyPelletRouter
                               final ExtraParams params)
     {
         // TODO: implement me!
-        return 0f;
+        float total = 0f;
+        PelletVertex currVertex = src;
+        PelletVertex next = new PelletVertex(game);
+        while (true) {
+            if (currVertex.getRemainingPelletCoordinates().isEmpty()) {
+                return total;
+            }
+            float minDistance = Float.POSITIVE_INFINITY;
+            Coordinate current = currVertex.getPacmanCoordinate();
+            for (PelletVertex p : getOutgoingNeighbors(currVertex, game, params)) {
+                minDistance = Math.min(minDistance, DistanceMetric.manhattanDistance(current, p.getPacmanCoordinate()));
+                next = p;
+            }
+            total += minDistance;  
+            currVertex = next; 
+        }
     }
 
     @Override
