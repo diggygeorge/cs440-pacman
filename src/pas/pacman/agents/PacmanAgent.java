@@ -13,6 +13,7 @@ import edu.bu.pas.pacman.routing.BoardRouter;
 import edu.bu.pas.pacman.routing.PelletRouter;
 import edu.bu.pas.pacman.utils.Coordinate;
 import edu.bu.pas.pacman.utils.Pair;
+import edu.bu.pas.pacman.utils.DistanceMetric;
 
 import java.util.Random;
 import java.util.Set;
@@ -61,44 +62,73 @@ public class PacmanAgent
 
         PelletVertex vertex = new PelletVertex(game);
         Coordinate start = vertex.getPacmanCoordinate();
-        Stack<Coordinate> plan = new Stack<Coordinate>();
+        Set<Coordinate> pellets = vertex.getRemainingPelletCoordinates();
 
-        Path<Coordinate> path = this.getBoardRouter().graphSearch(start, start, game);
+        Stack<Coordinate> plan = new Stack<>();
+
+        if (pellets.isEmpty()) {
+            setPlanToGetToTarget(new Stack<>());
+            return;
+        }
+
+        Coordinate target = null;
+        float best = Float.MAX_VALUE;
+
+        for (Coordinate p : pellets) {
+            float dist = DistanceMetric.manhattanDistance(start, p);
+            if (dist < best) {
+                best = dist;
+                target = p;
+            }
+        }
+
+        if (target == null) {
+            setPlanToGetToTarget(new Stack<>());
+            return;
+        }
+
+        Path<Coordinate> path = this.getBoardRouter().graphSearch(start, target, game);
+        Stack<Coordinate> plan = new Stack<>();
         while (path != null) {
             Coordinate c = path.getDestination();
             plan.push(c);
             path = path.getParentPath();
         }
-        plan.pop();
-        System.out.println("Plan: " + plan);
-        
-        setPlanToGetToTarget(plan);
 
+        if (!plan.isEmpty()) {
+            plan.pop();
+        }
+
+        setPlanToGetToTarget(plan);
     }
 
     @Override
     public Action makeMove(final GameView game)
     {
         // TODO: change me!
-        makePlan(game);
         PelletVertex vertex = new PelletVertex(game);
         Coordinate pacman = vertex.getPacmanCoordinate();
-        if (this.getPlanToGetToTarget().isEmpty() == false) {
-            Coordinate nextMove = this.getPlanToGetToTarget().pop();
-            System.out.println("Next Move: " + nextMove);
-            for (Action action : Action.values()) {
-                System.out.println("Pacman: " + pacman);
-                System.out.println("Neighbor: " + pacman.getNeighbor(action) + " Next Move: " + nextMove);
-                if (pacman.getNeighbor(action).equals(nextMove)) {
-                    System.out.println("Action: " + action);
-                    return action;
-                }
-            }
-        } else {
-            System.out.println("No plan detected");
+
+        if (this.getPlanToGetToTarget().isEmpty()) {
+            makePlan(game);
+        }
+
+        if (this.getPlanToGetToTarget().isEmpty()) {
             return Action.values()[this.getRandom().nextInt(Action.values().length)];
         }
-        return null;
+
+        Coordinate nextMove = this.getPlanToGetToTarget().pop();
+        System.out.println("Next Move: " + nextMove);
+        for (Action action : Action.values()) {
+            System.out.println("Pacman: " + pacman);
+            System.out.println("Neighbor: " + pacman.getNeighbor(action) + " Next Move: " + nextMove);
+            if (pacman.getNeighbor(action).equals(nextMove)) {
+                System.out.println("Action: " + action);
+                return action;
+            }
+        }
+
+        return Action.values()[this.getRandom().nextInt(Action.values().length)];
     }
 
     @Override
