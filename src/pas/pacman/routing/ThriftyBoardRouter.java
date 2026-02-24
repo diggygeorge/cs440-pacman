@@ -78,28 +78,34 @@ public class ThriftyBoardRouter
                                         final Coordinate tgt,
                                         final GameView game)
     {
-        PelletVertex vertex = new PelletVertex(game);
-        Set<Coordinate> pellets = vertex.getRemainingPelletCoordinates();
-        System.out.println("Pellets Remaining: " + pellets.size());
-        Queue<Path<Coordinate>> queue = new LinkedList<Path<Coordinate>>();
-        Path<Coordinate> srcPath = new Path<Coordinate>(src);
+
+        if (src.equals(tgt)) {
+            return new Path<Coordinate>(src);
+        }
+
+        Queue<Path<Coordinate>> queue = new LinkedList<>();
+        Set<Coordinate> visited = new java.util.HashSet<>();
+
+        Path<Coordinate> srcPath = new Path<>(src);
         queue.add(srcPath);
+        visited.add(src);
 
         while (!queue.isEmpty()) {
             Path<Coordinate> p = queue.poll();
             Coordinate current = p.getDestination();
-            if (pellets.contains(current)) {
+            if (current.equals(tgt)) {
                 return p;
             }
 
             for (Coordinate c : getOutgoingNeighbors(current, game, null)) {
-                Path<Coordinate> newPath = new Path<Coordinate>(c, (float)1.0, p);
-                queue.add(newPath);
+               if (visited.contains(c)) {
+                    continue;
+               }
+               visited.add(c);
+               queue.add(new Path<Coordinate>(c, 1.0f, p));
             }
         }
         return null;
-
     }
-
 }
 
