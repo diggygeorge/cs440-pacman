@@ -58,27 +58,25 @@ public class PacmanAgent
         // a Stack of Coordinates (see the documentation for SearchAgent)
         // which your makeMove can do something with!
 
-        //System.out.println("Pacman ID: " + game.getEntity(getPacmanId()));
-
         PelletVertex vertex = new PelletVertex(game);
         Coordinate start = vertex.getPacmanCoordinate();
         Set<Coordinate> pellets = vertex.getRemainingPelletCoordinates();
 
-        Stack<Coordinate> plan = new Stack<>();
+        Coordinate target = this.getTargetCoordinate();
+        if (target == null) {
 
-        if (pellets.isEmpty()) {
-            setPlanToGetToTarget(new Stack<>());
-            return;
-        }
+            if (pellets.isEmpty()) {
+                setPlanToGetToTarget(new Stack<>());
+                return;
+            }
+            float best = Float.MAX_VALUE;
 
-        Coordinate target = null;
-        float best = Float.MAX_VALUE;
-
-        for (Coordinate p : pellets) {
-            float dist = DistanceMetric.manhattanDistance(start, p);
-            if (dist < best) {
-                best = dist;
-                target = p;
+            for (Coordinate p : pellets) {
+                float dist = DistanceMetric.manhattanDistance(start, p);
+                if (dist < best) {
+                    best = dist;
+                    target = p;
+                }
             }
         }
 
@@ -86,6 +84,7 @@ public class PacmanAgent
             setPlanToGetToTarget(new Stack<>());
             return;
         }
+        
 
         Path<Coordinate> path = this.getBoardRouter().graphSearch(start, target, game);
         Stack<Coordinate> plan = new Stack<>();
@@ -94,11 +93,11 @@ public class PacmanAgent
             plan.push(c);
             path = path.getParentPath();
         }
-
+        //System.out.println("Plan to get to target: " + plan);
+        //System.out.println("Source: " + start.toString() + " Target: " + target.toString());
         if (!plan.isEmpty()) {
             plan.pop();
         }
-
         setPlanToGetToTarget(plan);
     }
 
@@ -109,7 +108,7 @@ public class PacmanAgent
         PelletVertex vertex = new PelletVertex(game);
         Coordinate pacman = vertex.getPacmanCoordinate();
 
-        if (this.getPlanToGetToTarget().isEmpty()) {
+        if (this.getPlanToGetToTarget() == null || this.getPlanToGetToTarget().isEmpty()) {
             makePlan(game);
         }
 
@@ -118,12 +117,15 @@ public class PacmanAgent
         }
 
         Coordinate nextMove = this.getPlanToGetToTarget().pop();
-        System.out.println("Next Move: " + nextMove);
+        if (nextMove.equals(pacman) && !this.getPlanToGetToTarget().isEmpty()) {
+            nextMove = this.getPlanToGetToTarget().pop();
+        }
+        //System.out.println("Next Move: " + nextMove);
         for (Action action : Action.values()) {
-            System.out.println("Pacman: " + pacman);
-            System.out.println("Neighbor: " + pacman.getNeighbor(action) + " Next Move: " + nextMove);
+            //System.out.println("Pacman: " + pacman);
+            //System.out.println("Neighbor: " + pacman.getNeighbor(action) + " Next Move: " + nextMove);
             if (pacman.getNeighbor(action).equals(nextMove)) {
-                System.out.println("Action: " + action);
+                //System.out.println("Action: " + action);
                 return action;
             }
         }

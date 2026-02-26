@@ -103,10 +103,12 @@ public class ThriftyPelletRouter
             }
             return best;
         }
+        return 0f;
     }
 
-    private staic float boardPathLength(Path<Coordinate> path) {
+    private static float boardPathLength(Path<Coordinate> path) {
         float steps = 0f;
+        Path<Coordinate> p = path;
         while (p != null && p.getParentPath() != null) {
             steps += 1f;
             p = p.getParentPath();
@@ -115,7 +117,7 @@ public class ThriftyPelletRouter
     }
 
     private float edgeWeight(final PelletVertex src, final PelletVertex dst, final GameView game) {
-        Coordiinate c1 = src.getPacmanCoordinate();
+        Coordinate c1 = src.getPacmanCoordinate();
         Coordinate c2 = dst.getPacmanCoordinate();
         Path<Coordinate> path = this.boardRouter.graphSearch(c1, c2, game);
 
@@ -126,12 +128,11 @@ public class ThriftyPelletRouter
     }
 
     @Override
-    public Path<PelletVertex> graphSearch(final GameView game) 
-    {
+    public Path<PelletVertex> graphSearch(final GameView game) {
         // TODO: implement me!
         final PelletVertex start = new PelletVertex(game);
 
-        if (start.getRemainingPelletCoordinates().isEmprty()) {
+        if (start.getRemainingPelletCoordinates().isEmpty()) {
             return new Path<>(start);
         }
 
@@ -147,7 +148,7 @@ public class ThriftyPelletRouter
             }
         }
 
-        PriorityQueue<Node> queue = new PriorityQueue<>(Comparator.comparingDouble(n -> n.total));
+        PriorityQueue<Node> queue = new PriorityQueue<Node>(Comparator.comparingDouble(n -> n.total));
         Map<PelletVertex, Float> bestCost = new HashMap<>();
 
         Path<PelletVertex> startPath = new Path<>(start);
@@ -175,9 +176,9 @@ public class ThriftyPelletRouter
                 }
 
                 float newCost = current.cost + edgeCost;
-                float oldCost = bestCost.get(neighbor);
+                float oldCost = bestCost.getOrDefault(neighbor, Float.MAX_VALUE);
 
-                if (oldCost == null || newCost < oldCost) {
+                if (newCost < oldCost) {
                     bestCost.put(neighbor, newCost);
                     float heuristicCost = getHeuristic(neighbor, game, null);
                     float newTotal = newCost + heuristicCost;
