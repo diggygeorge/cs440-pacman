@@ -69,35 +69,32 @@ public class PacmanAgent
                 setPlanToGetToTarget(new Stack<>());
                 return;
             }
-            float best = Float.MAX_VALUE;
 
-            for (Coordinate p : pellets) {
-                float dist = DistanceMetric.manhattanDistance(start, p);
-                if (dist < best) {
-                    best = dist;
-                    target = p;
-                }
+            Path<PelletVertex> pelletPath = this.getPelletRouter().graphSearch(game);            
+            if (pelletPath == null) {
+                 setPlanToGetToTarget(new Stack<>());
+                 return;
             }
-        }
 
-        if (target == null) {
-            setPlanToGetToTarget(new Stack<>());
-            return;
+            while (pelletPath.getParentPath() != null && pelletPath.getParentPath().getParentPath() != null) {
+                pelletPath = pelletPath.getParentPath();
+            }
+            target = pelletPath.getDestination().getPacmanCoordinate();
         }
-        
 
         Path<Coordinate> path = this.getBoardRouter().graphSearch(start, target, game);
         Stack<Coordinate> plan = new Stack<>();
+
         while (path != null) {
-            Coordinate c = path.getDestination();
-            plan.push(c);
+            plan.push(path.getDestination());
             path = path.getParentPath();
         }
-        //System.out.println("Plan to get to target: " + plan);
-        //System.out.println("Source: " + start.toString() + " Target: " + target.toString());
+        
         if (!plan.isEmpty()) {
             plan.pop();
         }
+        
+        //System.out.println("Source: " + start.toString() + " Target: " + target.toString());
         setPlanToGetToTarget(plan);
     }
 

@@ -13,20 +13,21 @@ import edu.bu.pas.pacman.utils.Coordinate;
 import edu.bu.pas.pacman.game.Tile;
 import edu.bu.pas.pacman.game.Tile.State;
 import edu.bu.pas.pacman.game.Board;
-import src.pas.pacman.routing.ThriftyBoardRouter;
+import edu.bu.pas.pacman.graph.PelletGraph.PelletVertex;
+import src.pas.pacman.routing.ThriftyPelletRouter;
 import edu.bu.pas.pacman.graph.Path;
 import edu.bu.pas.pacman.game.Game;
 import edu.bu.pas.pacman.game.Game.GameView;
 
 public class GraphSearchTest {
 
-    private ThriftyBoardRouter router;
+    private ThriftyPelletRouter router;
     private GameView game;
 
     @Before
     public void setUp() {
         // Initialize the router
-        this.router = new ThriftyBoardRouter(0, 0, 5);
+        this.router = new ThriftyPelletRouter(0, 0, 5);
         // 1. Create a 7x7 board filled entirely with WALLs by default
         Tile.State[][] states = new Tile.State[7][7];
         for (int x = 0; x < 7; x++) {
@@ -99,10 +100,10 @@ public class GraphSearchTest {
         Coordinate tgt = new Coordinate(5, 5);
 
         // Since src equals tgt, the code never uses GameView, so null is safe!
-        Path<Coordinate> result = router.graphSearch(src, tgt, null);
+        Path<PelletVertex> result = router.graphSearch(this.game);
 
         assertNotNull("Path should not be null when src and tgt are the same", result);
-        assertEquals("The path destination should match the target", src, result.getDestination());
+        assertEquals("The path destination should match the target", src, result.getDestination().getPacmanCoordinate());
         assertNull("The path should have no parents", result.getParentPath());
     }
 
@@ -115,17 +116,17 @@ public class GraphSearchTest {
         // You must initialize the GameView with the map used in the autograder.
         // Example: GameView game = new Game(new Board("test_map.txt")).getGameView();
 
-        Path<Coordinate> result = router.graphSearch(src, tgt, this.game);
+        Path<PelletVertex> result = router.graphSearch(this.game);
 
         // 1. Verify a path was actually found
         assertNotNull("Path should not be null; a valid route should exist", result);
         
         // 2. Verify the final destination is exactly the target
-        assertEquals("The path destination should match the target", tgt, result.getDestination());
+        assertEquals("The path destination should match the target", tgt, result.getDestination().getPacmanCoordinate());
 
         // 3. Count the steps to verify it takes exactly 6 actions to route around the walls
         int pathLength = 0;
-        Path<Coordinate> current = result;
+        Path<PelletVertex> current = result;
         
         while (current.getParentPath() != null) {
             pathLength++;

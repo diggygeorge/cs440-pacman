@@ -23,6 +23,7 @@ import edu.bu.pas.pacman.utils.Pair;
 import edu.bu.pas.pacman.routing.BoardRouter;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Comparator;
@@ -75,6 +76,9 @@ public class ThriftyPelletRouter
                                final ExtraParams params)
     {
         // TODO: implement me!
+        if (src == null || dst == null) {
+            return Float.MAX_VALUE;
+        }
         Coordinate c1 = src.getPacmanCoordinate();
         Coordinate c2 = dst.getPacmanCoordinate();
 
@@ -87,23 +91,42 @@ public class ThriftyPelletRouter
                               final GameView game,
                               final ExtraParams params)
     {
-        // TODO: implement me!
-        Set<Coordinate> pellets = src.getRemainingPelletCoordinates();
-        if (pellets.isEmpty()) {
+        Collection<PelletVertex> neighbors = getOutgoingNeighbors(src, game, null);
+        if (neighbors.isEmpty()) {
             return 0f;
         }
 
-        Coordinate pos = src.getPacmanCoordinate();
-        float best = Float.MAX_VALUE;
+        Set<PelletVertex> visited = new HashSet<>();
+        Set<PelletVertex> unvisited = new HashSet<>();
 
-        for (Coordinate p : pellets) {
-            float dist = DistanceMetric.manhattanDistance(pos, p);
-            if (dist < best) {
-                best = dist;
-            }
-            return best;
+        for (PelletVertex p : neighbors) {
+            unvisited.add(p);
         }
-        return 0f;
+
+        visited.add(src); 
+
+        float result = 0f;
+
+        while (!unvisited.isEmpty()) {
+            float minWeight = Float.MAX_VALUE;
+            PelletVertex next = null;
+
+            for (PelletVertex v : visited) {
+                for (PelletVertex u : unvisited) {
+                    float distance = getEdgeWeight(u, v, null);
+                    if (distance < minWeight) {
+                        minWeight = distance;
+                        next = u;
+                    }
+                }
+            }
+
+            result += minWeight;
+            visited.add(next);
+            unvisited.remove(next);
+        }
+
+        return result;
     }
 
     private static float boardPathLength(Path<Coordinate> path) {
@@ -129,6 +152,7 @@ public class ThriftyPelletRouter
 
     @Override
     public Path<PelletVertex> graphSearch(final GameView game) {
+
         // TODO: implement me!
         final PelletVertex start = new PelletVertex(game);
 
@@ -152,6 +176,7 @@ public class ThriftyPelletRouter
         Map<PelletVertex, Float> bestCost = new HashMap<>();
 
         Path<PelletVertex> startPath = new Path<>(start);
+        
         float heuristic = getHeuristic(start, game, null);
         queue.add(new Node(startPath, 0f, heuristic));
         bestCost.put(start, 0f);
@@ -166,9 +191,10 @@ public class ThriftyPelletRouter
             }
 
             if (currentVertex.getRemainingPelletCoordinates().isEmpty()) {
+                //System.out.println("PelletGraph Path: " + current.path.toString());
                 return current.path;
             }
-
+            //System.out.println("Start: " + currentVertex.getPacmanCoordinate());
             for (PelletVertex neighbor : getOutgoingNeighbors(currentVertex, game, null)) {
                 float edgeCost = edgeWeight(currentVertex, neighbor, game);
                 if (Float.isInfinite(edgeCost)) {
@@ -184,6 +210,7 @@ public class ThriftyPelletRouter
                     float newTotal = newCost + heuristicCost;
                     Path<PelletVertex> newPath = new Path<>(neighbor, edgeCost, current.path);
                     queue.add(new Node(newPath, newCost, newTotal));
+                    //System.out.println("Destination: " + newPath.getDestination().getPacmanCoordinate() + " Value: " + newTotal);
                 }
             }
         }
