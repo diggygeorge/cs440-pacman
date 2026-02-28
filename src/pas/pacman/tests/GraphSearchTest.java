@@ -63,7 +63,7 @@ public class GraphSearchTest {
         states[5][1] = Tile.State.EMPTY;
         states[5][2] = Tile.State.EMPTY;
         states[5][3] = Tile.State.EMPTY;
-        states[5][4] = Tile.State.EMPTY;
+        states[5][4] = Tile.State.PELLET;
         states[5][5] = Tile.State.EMPTY;
 
         // We need a ghost pen to satisfy the Game constructor, let's put it in the wall at (3,4)

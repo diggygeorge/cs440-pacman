@@ -5,6 +5,7 @@ package src.pas.pacman.routing;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.Set;
 import java.util.ArrayList;
 
 
@@ -22,6 +23,8 @@ import edu.bu.pas.pacman.utils.Pair;
 import edu.bu.pas.pacman.routing.BoardRouter;
 
 import java.util.HashMap;
+import java.util.Stack;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Comparator;
@@ -42,8 +45,8 @@ public class ThriftyPelletRouter
 
     // feel free to add other fields here!
     private final BoardRouter boardRouter;
-    private final Map<Pair<Coordinate, Coordinate>, Integer> distCache = new HashMap<>();
-    private GameView currentGameView;
+    private Stack<PelletVertex> pathStack;
+    private Map<Coordinate, Map<Coordinate, Float>> distanceCache = new HashMap<>();
 
     public ThriftyPelletRouter(int myUnitId,
                                int pacmanId,
@@ -79,20 +82,11 @@ public class ThriftyPelletRouter
         if (src == null || dst == null) {
             return Float.MAX_VALUE;
         }
-        Coordinate c1 = src.getPacmanCoordinate();
-        Coordinate c2 = dst.getPacmanCoordinate();
+        Coordinate p1 = src.getPacmanCoordinate();
+        Coordinate p2 = dst.getPacmanCoordinate();
 
-        if (this.currentGameView != null) {
-            int d = getMazeDistance(c1, c2, this.currentGameView);
-            if (d == Integer.MAX_VALUE) {
-                return Float.POSITIVE_INFINITY;
-            }
-            else {
-                return (float) d;
-            }
-        }
+        return DistanceMetric.manhattanDistance(p1, p2);
 
-        return DistanceMetric.manhattanDistance(c1, c2);
     }
 
     @Override
@@ -100,84 +94,82 @@ public class ThriftyPelletRouter
                               final GameView game,
                               final ExtraParams params)
     {
-        Collection<Coordinate> remaining = src.getRemainingPelletCoordinates();
-        if (remaining.isEmpty()) {
+        Collection<Coordinate> pellets = src.getRemainingPelletCoordinates();
+        if (pellets.isEmpty()) {
             return 0f;
         }
 
-        Coordinate pacmanCoord = src.getPacmanCoordinate();
-        int best = 0;
-        for (Coordinate pellet : remaining) {
-            int d = getMazeDistance(pacmanCoord, pellet, game);
-            if (d != Integer.MAX_VALUE && d > best) {
-                best = d;
-            }
+        Set<Coordinate> visited = new HashSet<>();
+        Set<Coordinate> unvisited = new HashSet<>();
+
+        for (Coordinate c : pellets) {
+            unvisited.add(c);
         }
-        return (float) best;
+
+        visited.add(src.getPacmanCoordinate());
+
+        float result = 0f;
+
+        while (!unvisited.isEmpty()) {
+            float minWeight = Float.MAX_VALUE;
+            Coordinate next = null;
+
+            for (Coordinate v : visited) {
+                for (Coordinate u : unvisited) {
+                    float distance = getCachedDistance(v, u, game);
+                    if (distance < minWeight) {
+                        minWeight = distance;
+                        next = u;
+                    }
+                }
+            }
+
+            result += minWeight;
+            visited.add(next);
+            unvisited.remove(next);
+        }
+
+        return result;
     }
 
-    private int getMazeDistance(final Coordinate a, final Coordinate b, final GameView game) {
-        if (a.equals(b)) {
-            return 0;
+    private static float boardPathLength(Path<Coordinate> path) {
+        float steps = 0f;
+        Path<Coordinate> p = path;
+        while (p != null && p.getParentPath() != null) {
+            steps += 1f;
+            p = p.getParentPath();
         }
-
-        Pair<Coordinate, Coordinate> key = new Pair<>(a, b);
-        Integer cached = this.distCache.get(key);
-        if (cached != null) {
-            return cached;
-        }
-
-        Queue<Coordinate> queue = new LinkedList<>();
-        Map<Coordinate, Integer> distances = new HashMap<>();
-
-        queue.add(a);
-        distances.put(a, 0);
-
-        while (!queue.isEmpty()) {
-            Coordinate current = queue.poll();
-            int currentDist = distances.get(current);
-
-            for (Coordinate next : this.boardRouter.getOutgoingNeighbors(current, game, null)) {
-                if (distances.containsKey(next)) {
-                    continue;
-                }
-
-                int nextDist = currentDist + 1;
-
-                if (next.equals(b)) {
-                    this.distCache.put(key, nextDist);
-                    this.distCache.put(new Pair<>(b, a), nextDist);
-                    return nextDist;
-                }
-
-                distances.put(next, nextDist);
-                queue.add(next);
-            }
-        }
-
-        this.distCache.put(key, Integer.MAX_VALUE);
-        this.distCache.put(new Pair<>(b, a), Integer.MAX_VALUE);
-        return Integer.MAX_VALUE;
+        return steps;
     }
 
-    private float edgeWeight(final PelletVertex src, final PelletVertex dst, final GameView game) {
-        Coordinate c1 = src.getPacmanCoordinate();
-        Coordinate c2 = dst.getPacmanCoordinate();
-        int d = getMazeDistance(c1, c2, game);
-        if (d == Integer.MAX_VALUE) {
-            return Float.POSITIVE_INFINITY;
+    private float getCachedDistance(Coordinate c1, Coordinate c2, final GameView game) {
+
+        if (c1.equals(c2)) {
+            return 0f;
         }
-        else {
-            return (float) d;
+
+        if (distanceCache.containsKey(c1) && distanceCache.get(c1).containsKey(c2)) {
+            return distanceCache.get(c1).get(c2);
         }
+
+        Path<Coordinate> path = this.boardRouter.graphSearch(c1, c2, game);
+        float dist = boardPathLength(path);
+
+        distanceCache.putIfAbsent(c1, new HashMap<>());
+        distanceCache.get(c1).put(c2, dist);
+
+        distanceCache.putIfAbsent(c2, new HashMap<>());
+        distanceCache.get(c2).put(c1, dist);
+
+        return dist;
     }
 
     @Override
     public Path<PelletVertex> graphSearch(final GameView game) {
 
         // TODO: implement me!
-        this.distCache.clear();
-        this.currentGameView = game;
+        // distanceCache.clear();
+
         final PelletVertex start = new PelletVertex(game);
 
         if (start.getRemainingPelletCoordinates().isEmpty()) {
@@ -216,11 +208,14 @@ public class ThriftyPelletRouter
 
             if (currentVertex.getRemainingPelletCoordinates().isEmpty()) {
                 //System.out.println("PelletGraph Path: " + current.path.toString());
+
                 return current.path;
             }
             //System.out.println("Start: " + currentVertex.getPacmanCoordinate());
+            //System.out.println("Pellets Remaining: " + currentVertex.getRemainingPelletCoordinates().size());
             for (PelletVertex neighbor : getOutgoingNeighbors(currentVertex, game, null)) {
-                float edgeCost = edgeWeight(currentVertex, neighbor, game);
+
+                float edgeCost = getCachedDistance(currentVertex.getPacmanCoordinate(), neighbor.getPacmanCoordinate(), game);
                 if (Float.isInfinite(edgeCost)) {
                     continue;
                 }

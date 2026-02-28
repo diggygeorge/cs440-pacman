@@ -69,16 +69,16 @@ public class PacmanAgent
                 setPlanToGetToTarget(new Stack<>());
                 return;
             }
-
-            Path<PelletVertex> pelletPath = this.getPelletRouter().graphSearch(game);            
+            Path<PelletVertex> pelletPath = this.getPelletRouter().graphSearch(game); 
             if (pelletPath == null) {
-                 setPlanToGetToTarget(new Stack<>());
-                 return;
+                setPlanToGetToTarget(new Stack<>());
+                return;
             }
 
             while (pelletPath.getParentPath() != null && pelletPath.getParentPath().getParentPath() != null) {
                 pelletPath = pelletPath.getParentPath();
             }
+        
             target = pelletPath.getDestination().getPacmanCoordinate();
         }
 
@@ -93,8 +93,9 @@ public class PacmanAgent
         if (!plan.isEmpty()) {
             plan.pop();
         }
-        
+
         //System.out.println("Source: " + start.toString() + " Target: " + target.toString());
+        //System.out.println("Plan: " + plan);
         setPlanToGetToTarget(plan);
     }
 
@@ -114,9 +115,7 @@ public class PacmanAgent
         }
 
         Coordinate nextMove = this.getPlanToGetToTarget().pop();
-        if (nextMove.equals(pacman) && !this.getPlanToGetToTarget().isEmpty()) {
-            nextMove = this.getPlanToGetToTarget().pop();
-        }
+
         //System.out.println("Next Move: " + nextMove);
         for (Action action : Action.values()) {
             //System.out.println("Pacman: " + pacman);
